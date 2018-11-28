@@ -9,10 +9,10 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-    whhttp "github.com/siddhardhan/k8s/controllers/pkg/http"
-	mutatingwh "github.com/siddhardhan/k8s/controllers/pkg/mutating"
+    whhttp "github.com/siddhardhan/k8s/pkg/http"
+	mutatingwh "github.com/siddhardhan/k8s/pkg/mutating"
 
-	"github.com/siddhardhan/k8s/controllers/pkg/log"
+	"github.com/siddhardhan/k8s/pkg/log"
 )
 
 func annotatePodMutator(_ context.Context, obj metav1.Object) (bool, error) {
