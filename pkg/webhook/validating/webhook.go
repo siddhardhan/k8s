@@ -15,7 +15,7 @@ import (
 	"github.com/siddhardhan/k8s/pkg/observability/metrics"
 	"github.com/siddhardhan/k8s/pkg/webhook"
 	"github.com/siddhardhan/k8s/pkg/webhook/internal/helpers"
-	"github.com/siddhardhan/k8s/pkg/webhook/internal/instrumenting"
+	"github.com/siddhardhan/k8s/controllers/pkg/webhook/internal/instrumenting"
 )
 
 // WebhookConfig is the Validating webhook configuration.

@@ -1,8 +1,8 @@
 FROM golang:1.10-alpine AS build-stage
-ARG example
 WORKDIR /go/src/github.com/siddhardhan/k8s
 COPY . .
-RUN CGO_ENABLED=0 go build -o /bin/pod-annotator --ldflags "-w -extldflags '-static'"  github.com/siddhardhan/k8s/controllers
+RUN go get 
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-extldflags "-static"' -o /bin/pod-annotator .
 
 # Final image.
 FROM alpine:latest
