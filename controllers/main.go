@@ -16,6 +16,7 @@ import (
 )
 
 func annotatePodMutator(_ context.Context, obj metav1.Object) (bool, error) {
+	logger := &log.Std{Debug: true}
 	pod, ok := obj.(*corev1.Pod)
 	if !ok {
 		// If not a pod just continue the mutation chain(if there is one) and don't do nothing.
@@ -26,7 +27,9 @@ func annotatePodMutator(_ context.Context, obj metav1.Object) (bool, error) {
 	if pod.Annotations == nil {
 		pod.Annotations = make(map[string]string)
 	}
+	logger.Infof("Adding Annotation: mutated=true")
 	pod.Annotations["mutated"] = "true"
+	logger.Infof("Adding Annotation: mutated=pod-annotate")
 	pod.Annotations["mutator"] = "pod-annotate"
 
 	return false, nil

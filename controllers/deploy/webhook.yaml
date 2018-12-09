@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: pod-annotate-webhook
-          image: siddhardhan/pod-annotator:1.0
+          image: siddhardhan/pod-annotator:1.3
           imagePullPolicy: Always
           args:
             - -tls-cert-file=/etc/webhook/certs/cert.pem
@@ -57,7 +57,7 @@ metadata:
     app: pod-annotate-webhook
     kind: mutator
 webhooks:
-  - name: pod-annotate-webhook.slok.xyz
+  - name: pod-annotate-webhook.siddhardhan.xyz
     clientConfig:
       service:
         name: pod-annotate-webhook

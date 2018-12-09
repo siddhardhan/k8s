@@ -2,8 +2,11 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: nginx-test
+  annotations:
+    date: "1543631318"
+    test: "true"
 spec:
-  replicas: 10
+  replicas: 3
   template:
     metadata:
       labels:
@@ -12,3 +15,10 @@ spec:
       containers:
       - name: nginx
         image: nginx
+      initContainers:
+        - name: init-myservice
+          image: busybox
+          command: ['sh', '-c', 'until nslookup myservice; do echo waiting for myservice; sleep 2; done;']
+        - name: init-mydb
+          image: busybox
+          command: ['sh', '-c', 'until nslookup mydb; do echo waiting for mydb; sleep 2; done;']
