@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: demo
+  name: demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:
+        app: demo
+    spec:
+      initContainers:
+      - image: in-cluster:latest
+        name: in-cluster-init
+        command: ["/app"]
+        args: ["-init"]
+        imagePullPolicy: Never
+      containers:
+      - image: in-cluster:latest
+        name: in-cluster
+        command: ["/app"]
+        args: [""]
+        imagePullPolicy: Never
