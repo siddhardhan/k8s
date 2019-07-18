@@ -16,6 +16,12 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+type API struct {
+	httpClient    *http.Client
+	URL, Token    string
+	RequestParams map[string]string
+}
+
 func main() {
 
 	isInitContainer := flag.Bool("init", false, "to decide init or side-car container")
@@ -45,38 +51,29 @@ func main() {
 			log.Panic("Content of ", NamespaceFile, " can not be null")
 		}
 
-		// Start - K8S Client Operations
+		// Start - K8S Client Operations to get Pods
 		clientset, err := kubernetes.NewForConfig(config)
 		if err != nil {
 			log.Panic(err.Error())
 		}
 
-		// Get Pods
 		pods, err := ListPods(clientset.CoreV1(), namespace)
 		if err != nil {
 			log.Fatalf("listing pods: %s", err)
 		}
 
 		fmt.Println(strings.Join(pods, "\n"))
-		// End - K8S Client Operations
+		// End - K8S Client Operations to get Pods
 
 		// Start - Call rest api
-		client := &http.Client{}
-
-		req, _ := http.NewRequest("GET", "https://api.weather.gov/", nil)
-		req.Header.Add("Accept", "application/json")
-		resp, err := client.Do(req)
-
+		api := API{
+			httpClient:    &http.Client{},
+			URL:           "https://api.weather.gov/",
+			RequestParams: map[string]string{"Accept": "application/json", "Token": config.BearerToken}}
+		resp_body, err := GetToken(&api)
 		if err != nil {
-			log.Println("Response Status : ", resp.StatusCode)
-			log.Println("Errored when sending request to the server")
-			return
+			log.Fatalf("Errored when sending request to the server : %s", err)
 		}
-
-		defer resp.Body.Close()
-		resp_body, _ := ioutil.ReadAll(resp.Body)
-
-		log.Println("Response status : ", resp.StatusCode)
 		log.Println("Response Body is : ", string(resp_body))
 		// End - Call rest api
 
@@ -102,4 +99,33 @@ func ListPods(client corev1.CoreV1Interface, namespace string) ([]string, error)
 	}
 
 	return pods, nil
+}
+
+func GetToken(api *API) ([]byte, error) {
+
+	log.Println("URL : ", api.URL)
+	log.Println("RequestParams : ", api.RequestParams)
+	log.Println("httpClient : ", api.httpClient)
+
+	req, err := http.NewRequest("GET", api.URL, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to build request")
+	}
+
+	for key, value := range api.RequestParams {
+		log.Println("Key:", key, "Value:", value)
+		req.Header.Add(key, value)
+	}
+	resp, err := api.httpClient.Do(req)
+
+	log.Println("Response Status : ", resp.StatusCode)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "request failed")
+	}
+
+	defer resp.Body.Close()
+	resp_body, err := ioutil.ReadAll(resp.Body)
+	// handling error and doing stuff with body that needs to be unit tested
+	return resp_body, err
 }

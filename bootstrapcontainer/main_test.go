@@ -1,17 +1,23 @@
 package main
 
 import (
+	"context"
+	"crypto/tls"
 	"fmt"
+	"net"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-func TestOutSideCluster(t *testing.T) {
+func TestMainOutSideCluster(t *testing.T) {
 	func() {
 		defer func() {
 			if r := recover(); r == nil {
@@ -54,4 +60,45 @@ func TestListPods(t *testing.T) {
 
 func pod(namespace, name string) *v1.Pod {
 	return &v1.Pod{ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name}}
+}
+
+func testingHTTPClient(handler http.Handler) (*http.Client, func()) {
+	s := httptest.NewTLSServer(handler)
+
+	cli := &http.Client{
+		Transport: &http.Transport{
+			DialContext: func(_ context.Context, network, _ string) (net.Conn, error) {
+				return net.Dial(network, s.Listener.Addr().String())
+			},
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+
+	return cli, s.Close
+}
+
+func TestClientGetToken(t *testing.T) {
+	var okResponse = `{
+		"status": "OK"
+	}`
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "application/json", r.Header.Get("Accept"))
+		assert.Equal(t, "23rfwe23", r.Header.Get("Token"))
+		w.Write([]byte(okResponse))
+	})
+	httpClient, teardown := testingHTTPClient(h)
+	defer teardown()
+
+	api := API{
+		httpClient:    &http.Client{},
+		URL:           "https://api.weather.gov/",
+		RequestParams: map[string]string{"Accept": "application/json", "Token": "23rfwe23"}}
+	api.httpClient = httpClient
+
+	resp, err := GetToken(&api)
+
+	assert.Nil(t, err)
+	assert.Equal(t, 21, len(resp))
 }
