@@ -105,7 +105,6 @@ func GetToken(api *API) ([]byte, error) {
 
 	log.Println("URL : ", api.URL)
 	log.Println("RequestParams : ", api.RequestParams)
-	log.Println("httpClient : ", api.httpClient)
 
 	req, err := http.NewRequest("GET", api.URL, nil)
 	if err != nil {

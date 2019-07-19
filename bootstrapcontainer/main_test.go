@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
+	"flag"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,16 +17,26 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-func TestMainOutSideCluster(t *testing.T) {
-	func() {
-		defer func() {
-			if r := recover(); r == nil {
-				fmt.Println("unable to load in-cluster configuration, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined", r)
-			}
-		}()
-		// This function should cause a panic
-		main()
-	}()
+// func TestMainOutSideCluster(t *testing.T) {
+// 	// func() {
+// 	// 	defer func() {
+// 	// 		if r := recover(); r == nil {
+// 	// 			fmt.Println("unable to load in-cluster configuration, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined", r)
+// 	// 		}
+// 	// 	}()
+// 	// 	// This function should cause a panic
+// 	// 	main()
+// 	// }()
+
+// 	var expected = "unable to load in-cluster configuration, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined"
+// 	actual, err := main()
+// 	assert.Equal(t, err, expected)
+
+// }
+
+func TestMain(m *testing.M) {
+	flag.Parse()
+	os.Exit(m.Run())
 }
 
 func TestListPods(t *testing.T) {
@@ -39,21 +49,16 @@ func TestListPods(t *testing.T) {
 		{"no pods", "", nil, nil},
 		{"all namespaces", "", []string{"poda", "podb"}, []runtime.Object{pod("correct-namespace", "poda"), pod("wrong-namespace", "podb")}},
 		{"filter namespace", "correct-namespace", []string{"poda"}, []runtime.Object{pod("correct-namespace", "poda"), pod("wrong-namespace", "podb")}},
-		{"wrong namespace", "correct-namespace", nil, []runtime.Object{pod("wrong-namespace", "podb")}},
+		{"wrong namespace", "correct-namespace", nil, []runtime.Object{pod("wrong-namespace", "poda")}},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			client := fake.NewSimpleClientset(test.objs...)
 			actual, err := ListPods(client.CoreV1(), test.namespace)
-			if err != nil {
-				t.Errorf("Unexpected error: %s", err)
-				return
-			}
-			if diff := cmp.Diff(actual, test.expected); diff != "" {
-				t.Errorf("%T differ (-got, +want): %s", test.expected, diff)
-				return
-			}
+
+			assert.Nil(t, err)
+			assert.Equal(t, test.expected, actual)
 		})
 	}
 }
